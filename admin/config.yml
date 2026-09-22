@@ -5,6 +5,9 @@ backend:
   base_url: https://surogate.site
   auth_endpoint: /oauth/authorize
 
+media_folder: "images/uploads"
+public_folder: "/images/uploads"
+
 collections:
   - name: "products"
     label: "المنتجات"
