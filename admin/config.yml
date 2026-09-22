@@ -2,8 +2,8 @@ backend:
   name: github
   repo: MEDIVIA-MEDICAL/medivia-store
   branch: main
+  site_domain: medivia-medical.github.io
 
-# مجلد حفظ الصور المرفوعة
 media_folder: "images/uploads"
 public_folder: "/images/uploads"
 
@@ -18,8 +18,6 @@ collections:
       - { label: "السعر الحالي (ريال)", name: "price", widget: "number" }
       - { label: "السعر القديم (اختياري)", name: "old_price", widget: "number", required: false }
       - { label: "رابط الواتساب", name: "whatsapp_link", widget: "string" }
-      
-      # قسم إدارة الصور (إضافة، استبدال، وحذف)
       - label: "صور المنتج (السلايدر)"
         name: "images"
         widget: "list"
