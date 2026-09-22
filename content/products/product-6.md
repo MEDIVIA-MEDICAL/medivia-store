@@ -1,4 +1,4 @@
-<!-- Product 6 -->
+<!-- Product 1 -->
 <div class="product-card">
     <div class="image-slider">
         <img src="https://i.postimg.cc/Y0VC5Kj9/jhaz-qyas-dght-aldm-i-Care-BPTrack.webp" alt="جهاز قياس ضغط الدم iCare BPTrack" class="product-image active">
