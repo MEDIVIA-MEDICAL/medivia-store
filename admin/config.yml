@@ -1,8 +1,5 @@
 backend:
-  name: github
-  repo: MEDIVIA-MEDICAL/medivia-store
-  branch: main
-  site_domain: medivia-medical.github.io
+  name: test-repo
 
 media_folder: "images/uploads"
 public_folder: "/images/uploads"
