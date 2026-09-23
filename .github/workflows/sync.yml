@@ -1,9 +1,10 @@
-name: Sync Google Sheets to GitHub
+name: Sync CSV Products to Store
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -12,6 +13,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Run sync script
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Download and Process CSV Products
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Syncing products..."
+          echo "Processing product sync..."
+          # هنا سيتم قراءة ملف الـ CSV وتحديث مجلد content/products تلقائياً
