@@ -24,4 +24,5 @@ jobs:
           SHEET_ID: "1Vmb38osVEYcW5XN3xMyZlCJUvKNUiGqM2oHqkHB4cv0"
         run: |
           echo "Fetching data from Google Sheets ID: $SHEET_ID"
+          
           # الكود هنا سيقوم بتحويل بيانات جدول جوجل إلى منتجات المتجر تلقائياً
