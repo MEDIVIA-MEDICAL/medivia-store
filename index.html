@@ -279,6 +279,17 @@
         footer p {
             color: #bbb;
         }
+
+        .products-status { grid-column: 1 / -1; text-align: center; color: #777; padding: 30px 0; }
+        .product-desc { font-size: 0.9rem; color: #666; margin-bottom: 12px; line-height: 1.6;
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .product-old-price { color: #999; text-decoration: line-through; font-size: 0.95rem; margin-inline-start: 8px; font-weight: 500; }
+        .image-slider { position: relative; }
+        .image-slider .product-image { display: none; }
+        .image-slider .product-image.active { display: block; }
+        .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,.45); color: #fff;
+            border: 0; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; line-height: 1; }
+        .slider-btn.prev { right: 8px; } .slider-btn.next { left: 8px; }
     </style>
 </head>
 <body>
@@ -298,9 +309,11 @@
 
     <div class="container">
         
-        <!-- Main Products Section -->
-        <h2 class="section-title">منتجات مختارة</h2>
-        <div class="product-grid">
+        <!-- Products: يتم تحميلها تلقائياً من Google Sheet (المنتجات الثابتة تحت هي احتياطي فقط لو فشل التحميل) -->
+        <h2 class="section-title">منتجاتنا</h2>
+        <div class="product-grid" id="products-grid">
+            <div id="products-status" class="products-status">جاري تحميل المنتجات...</div>
+            <template id="fallback-products">
             
             <!-- Product 1 -->
 <div class="product-card">
@@ -310,7 +323,7 @@
     </div>
     <div class="product-info">
         <h3 class="product-title">بخاخ شبكي متنقل إير برو 3 (FEELLIFE)</h3>
-        <div class="product-price"٣٧٠ ريال</div>
+        <div class="product-price">370 ريال</div>
         <a href="https://wa.link/d1bhfp" class="btn-order" target="_blank">اطلب الحين</a>
     </div>
 </div>
@@ -339,12 +352,6 @@
     </div>
 </div>
 
-        </div>
-
-        <!-- Additional Popular Products Section -->
-        <h2 class="section-title">مستلزمات إضافية مطلوبة بالرياض</h2>
-        <div class="product-grid">
-            
             <!-- Product 4 -->
 <div class="product-card">
     <div class="image-slider">
@@ -360,8 +367,7 @@
             <!-- Product 5 -->
 <div class="product-card">
     <div class="image-slider">
-        
-        <img src="https://i.postimg.cc/6379XbRp/61Ioqni-VTc-L-AC-UF1000-1000-QL80-FMwebp.webp" alt="جهاز قياس السكر Contour TS - صورة 4" class="product-image">
+        <img src="https://i.postimg.cc/6379XbRp/61Ioqni-VTc-L-AC-UF1000-1000-QL80-FMwebp.webp" alt="جهاز قياس السكر Contour TS" class="product-image active">
     </div>
     <div class="product-info">
         <h3 class="product-title">جهاز قياس السكر Contour TS</h3>
@@ -369,6 +375,7 @@
         <a href="https://wa.link/d1bhfp" class="btn-order" target="_blank">اطلب الحين</a>
     </div>
 </div>
+            </template>
         </div>
 
         <!-- WhatsApp Call to Action Banner -->
@@ -418,5 +425,73 @@
         <p>جميع الحقوق محفوظة © MEDIVIA (MEDIVIA) - الرياض، المملكة العربية السعودية</p>
     </footer>
 
+
+    <script>
+    // ====== الإعدادات ======
+    const SHEET_ID = "1Vmb38osVEYcW5XN3xMyZlCJUvKNUiGqM2oHqkHB4cv0";
+    const WHATSAPP_LINK = "https://wa.link/d1bhfp";
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv";
+
+    function parseCSV(text) {
+        const rows = []; let row = [], cur = "", q = false;
+        for (let i = 0; i < text.length; i++) {
+            const c = text[i];
+            if (q) {
+                if (c === '"' && text[i+1] === '"') { cur += '"'; i++; }
+                else if (c === '"') q = false;
+                else cur += c;
+            } else if (c === '"') q = true;
+            else if (c === ',') { row.push(cur); cur = ""; }
+            else if (c === '\n' || c === '\r') {
+                if (c === '\r' && text[i+1] === '\n') i++;
+                row.push(cur); cur = ""; rows.push(row); row = [];
+            } else cur += c;
+        }
+        if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+        const head = rows.shift().map(h => h.trim().toLowerCase());
+        return rows.filter(r => r.some(x => x.trim() !== "")).map(r => {
+            const o = {}; head.forEach((h, i) => o[h] = (r[i] || "").trim()); return o;
+        });
+    }
+    const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const num = v => { const n = parseFloat(String(v).replace(/[^\d.]/g, "")); return isNaN(n) ? null : n; };
+
+    function cardHTML(p) {
+        const imgs = (p.image || "").match(/https?:\/\/[^\s,|"]+/g) || [];
+        const price = num(p.price), old = num(p.discount);
+        const imgHTML = imgs.map((u, i) =>
+            '<img src="' + esc(u) + '" alt="' + esc(p.title) + '" class="product-image' + (i === 0 ? ' active' : '') + '" loading="lazy">').join("");
+        const nav = imgs.length > 1 ? '<button class="slider-btn prev" aria-label="السابق">›</button><button class="slider-btn next" aria-label="التالي">‹</button>' : "";
+        return '<div class="product-card"><div class="image-slider">' + imgHTML + nav + '</div>' +
+            '<div class="product-info"><h3 class="product-title">' + esc(p.title) + '</h3>' +
+            (p.description ? '<div class="product-desc">' + esc(p.description) + '</div>' : '') +
+            '<div class="product-price">' + (price !== null ? price + ' ريال' : '') +
+            (old && price !== null && old > price ? '<span class="product-old-price">' + old + ' ريال</span>' : '') + '</div>' +
+            '<a href="' + WHATSAPP_LINK + '" class="btn-order" target="_blank" rel="noopener">اطلب الحين</a></div></div>';
+    }
+
+    async function loadProducts() {
+        const grid = document.getElementById("products-grid");
+        try {
+            const res = await fetch(CSV_URL + "&t=" + Date.now(), { cache: "no-store" });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const products = parseCSV(await res.text()).filter(p => p.title);
+            if (!products.length) throw new Error("empty sheet");
+            grid.innerHTML = products.map(cardHTML).join("");
+        } catch (err) {
+            console.error("Sheet load failed, using fallback:", err);
+            grid.innerHTML = document.getElementById("fallback-products").innerHTML;
+        }
+    }
+    document.addEventListener("click", e => {
+        const b = e.target.closest(".slider-btn"); if (!b) return;
+        const imgs = [...b.parentElement.querySelectorAll(".product-image")];
+        let i = imgs.findIndex(x => x.classList.contains("active"));
+        imgs[i].classList.remove("active");
+        i = (i + (b.classList.contains("next") ? 1 : -1) + imgs.length) % imgs.length;
+        imgs[i].classList.add("active");
+    });
+    loadProducts();
+    </script>
 </body>
 </html>
