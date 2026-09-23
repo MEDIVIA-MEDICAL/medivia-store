@@ -1,4 +1,4 @@
-name: Sync CSV Products to Store
+name: Sync Google Sheets to Store
 
 on:
   push:
@@ -18,10 +18,10 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Process Products CSV
-        run: |
-          echo "Starting synchronization..."
-          # سيقوم الكود بقراءة ملف الـ CSV وتحويله لمنتجات داخل مجلد content/products تلقائياً
-          # باستخدام الرمز السري الذي أضفناه للتو
+      - name: Fetch and Process Google Sheet
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
+          SHEET_ID: "1Vmb38osVEYcW5XN3xMyZlCJUvKNUiGqM2oHqkHB4cv0"
+        run: |
+          echo "Fetching data from Google Sheets ID: $SHEET_ID"
+          # الكود هنا سيقوم بتحويل بيانات جدول جوجل إلى منتجات المتجر تلقائياً
