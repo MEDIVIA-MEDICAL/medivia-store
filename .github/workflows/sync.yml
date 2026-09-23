@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_PAT }}
 
       - name: Download Google Sheet as CSV
         run: |
@@ -29,5 +31,4 @@ jobs:
           cp products.csv content/products/products.csv
           
           git add content/products/products.csv
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-sync products from Google Sheets" && git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}.git main)
-
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-sync products from Google Sheets" && git push)
