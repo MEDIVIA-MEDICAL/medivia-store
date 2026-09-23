@@ -41,3 +41,4 @@ jobs:
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-sync products from Google Sheets" && git push)
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
+
