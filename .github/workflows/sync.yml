@@ -32,3 +32,7 @@ jobs:
           
           git add content/products/products.csv
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-sync products from Google Sheets" && git push)
+
+      - name: Trigger Vercel Deploy
+        run: |
+          curl -X POST "https://api.vercel.com/v1/integrations/deploy/${{ secrets.VERCEL_DEPLOY_HOOK }}"
