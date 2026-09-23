@@ -18,11 +18,26 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Fetch and Process Google Sheet
+      - name: Download Google Sheet as CSV
+        run: |
+          SHEET_ID="1Vmb38osVEYcW5XN3xMyZlCJUvKNUiGqM2oHqkHB4cv0"
+          URL="https://docs.google.com/spreadsheets/d/$SHEET_ID/export?format=csv"
+          curl -L "$URL" -o products.csv
+          echo "Downloaded Sheet successfully. Checking content:"
+          head -n 5 products.csv
+
+      - name: Process Products and Commit
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # تأكد من أن مجلد المنتجات موجود
+          mkdir -p content/products
+          
+          # هنا يتم نقل وترتيب الملف ليتوافق مع المتجر
+          cp products.csv content/products/products.csv
+          
+          git add content/products/products.csv
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-sync products from Google Sheets" && git push)
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
-          SHEET_ID: "1Vmb38osVEYcW5XN3xMyZlCJUvKNUiGqM2oHqkHB4cv0"
-        run: |
-          echo "Fetching data from Google Sheets ID: $SHEET_ID"
-          
-          # الكود هنا سيقوم بتحويل بيانات جدول جوجل إلى منتجات المتجر تلقائياً
