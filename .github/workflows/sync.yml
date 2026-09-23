@@ -18,9 +18,10 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Download and Process CSV Products
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Process Products CSV
         run: |
-          echo "Processing product sync..."
-          # هنا سيتم قراءة ملف الـ CSV وتحديث مجلد content/products تلقائياً
+          echo "Starting synchronization..."
+          # سيقوم الكود بقراءة ملف الـ CSV وتحويله لمنتجات داخل مجلد content/products تلقائياً
+          # باستخدام الرمز السري الذي أضفناه للتو
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
