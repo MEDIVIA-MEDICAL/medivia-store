@@ -290,6 +290,20 @@
         .slider-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,.45); color: #fff;
             border: 0; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 18px; line-height: 1; }
         .slider-btn.prev { right: 8px; } .slider-btn.next { left: 8px; }
+
+        .btn-details { display: block; width: 100%; background: #fff; color: var(--primary-color); border: 2px solid var(--primary-color);
+            padding: 9px 20px; border-radius: 6px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-bottom: 10px; transition: all .3s ease; }
+        .btn-details:hover { background: var(--primary-color); color: #fff; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 15px; }
+        .modal-overlay.open { display: flex; }
+        .modal-box { background: #fff; border-radius: 14px; max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; }
+        .modal-close { position: absolute; top: 10px; left: 10px; z-index: 5; width: 36px; height: 36px; border-radius: 50%; border: 0;
+            background: rgba(0,0,0,.6); color: #fff; font-size: 22px; line-height: 1; cursor: pointer; }
+        .modal-box .product-image { height: 300px; object-fit: contain; }
+        .modal-body { padding: 20px; text-align: right; }
+        .modal-body .product-title { font-size: 1.3rem; }
+        .modal-desc { white-space: pre-line; line-height: 1.9; color: #444; margin: 15px 0 20px; }
+        .modal-body .btn-order { display: block; text-align: center; }
     </style>
 </head>
 <body>
@@ -425,6 +439,13 @@
         <p>جميع الحقوق محفوظة © MEDIVIA (MEDIVIA) - الرياض، المملكة العربية السعودية</p>
     </footer>
 
+    <!-- نافذة تفاصيل المنتج -->
+    <div class="modal-overlay" id="product-modal" aria-hidden="true">
+        <div class="modal-box" role="dialog" aria-modal="true">
+            <button type="button" class="modal-close" id="modal-close" aria-label="إغلاق">×</button>
+            <div id="modal-content"></div>
+        </div>
+    </div>
 
     <script>
     // ====== الإعدادات ======
@@ -456,7 +477,9 @@
     const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const num = v => { const n = parseFloat(String(v).replace(/[^\d.]/g, "")); return isNaN(n) ? null : n; };
 
-    function cardHTML(p) {
+    let PRODUCTS = [];
+
+    function cardHTML(p, idx) {
         const imgs = (p.image || "").match(/https?:\/\/[^\s,|"]+/g) || [];
         const price = num(p.price), old = num(p.discount);
         const imgHTML = imgs.map((u, i) =>
@@ -467,7 +490,30 @@
             (p.description ? '<div class="product-desc">' + esc(p.description) + '</div>' : '') +
             '<div class="product-price">' + (price !== null ? price + ' ريال' : '') +
             (old && price !== null && old > price ? '<span class="product-old-price">' + old + ' ريال</span>' : '') + '</div>' +
+            '<button type="button" class="btn-details" data-idx="' + idx + '">عرض التفاصيل</button>' +
             '<a href="' + WHATSAPP_LINK + '" class="btn-order" target="_blank" rel="noopener">اطلب الحين</a></div></div>';
+    }
+
+    function openModal(idx) {
+        const p = PRODUCTS[idx]; if (!p) return;
+        const imgs = (p.image || "").match(/https?:\/\/[^\s,|"]+/g) || [];
+        const price = num(p.price), old = num(p.discount);
+        const imgHTML = imgs.map((u, i) =>
+            '<img src="' + esc(u) + '" alt="' + esc(p.title) + '" class="product-image' + (i === 0 ? ' active' : '') + '">').join("");
+        const nav = imgs.length > 1 ? '<button class="slider-btn prev" aria-label="السابق">›</button><button class="slider-btn next" aria-label="التالي">‹</button>' : "";
+        document.getElementById("modal-content").innerHTML =
+            '<div class="image-slider">' + imgHTML + nav + '</div>' +
+            '<div class="modal-body"><h3 class="product-title">' + esc(p.title) + '</h3>' +
+            '<div class="product-price">' + (price !== null ? price + ' ريال' : '') +
+            (old && price !== null && old > price ? '<span class="product-old-price">' + old + ' ريال</span>' : '') + '</div>' +
+            (p.description ? '<div class="modal-desc">' + esc(p.description) + '</div>' : '') +
+            '<a href="' + WHATSAPP_LINK + '" class="btn-order" target="_blank" rel="noopener">اطلب الحين</a></div>';
+        document.getElementById("product-modal").classList.add("open");
+        document.body.style.overflow = "hidden";
+    }
+    function closeModal() {
+        document.getElementById("product-modal").classList.remove("open");
+        document.body.style.overflow = "";
     }
 
     async function loadProducts() {
@@ -477,6 +523,7 @@
             if (!res.ok) throw new Error("HTTP " + res.status);
             const products = parseCSV(await res.text()).filter(p => p.title);
             if (!products.length) throw new Error("empty sheet");
+            PRODUCTS = products;
             grid.innerHTML = products.map(cardHTML).join("");
         } catch (err) {
             console.error("Sheet load failed, using fallback:", err);
@@ -484,6 +531,9 @@
         }
     }
     document.addEventListener("click", e => {
+        const d = e.target.closest(".btn-details");
+        if (d) { openModal(+d.dataset.idx); return; }
+        if (e.target.id === "product-modal" || e.target.closest("#modal-close")) { closeModal(); return; }
         const b = e.target.closest(".slider-btn"); if (!b) return;
         const imgs = [...b.parentElement.querySelectorAll(".product-image")];
         let i = imgs.findIndex(x => x.classList.contains("active"));
@@ -491,7 +541,8 @@
         i = (i + (b.classList.contains("next") ? 1 : -1) + imgs.length) % imgs.length;
         imgs[i].classList.add("active");
     });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
     loadProducts();
     </script>
 </body>
-</html>
+            </html>
