@@ -314,6 +314,14 @@
         .modal-body .product-title { font-size: 1.3rem; }
         .modal-desc { white-space: pre-line; line-height: 1.9; color: #444; margin: 15px 0 20px; }
         .modal-body .btn-order { display: block; text-align: center; }
+
+        .search-box { display: none; max-width: 520px; margin: 0 auto 30px; position: relative; }
+        .search-box.show { display: block; }
+        .search-box input { width: 100%; padding: 13px 46px 13px 16px; border: 2px solid #dfe5e8; border-radius: 30px; font-size: 1rem;
+            outline: none; background: #fff; transition: border-color .3s; }
+        .search-box input:focus { border-color: var(--primary-color); }
+        .search-box i { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); color: #999; pointer-events: none; }
+        .no-results { grid-column: 1 / -1; text-align: center; color: #777; padding: 30px 0; }
     </style>
 </head>
 <body>
@@ -335,6 +343,10 @@
         
         <!-- Products: يتم تحميلها تلقائياً من Google Sheet (المنتجات الثابتة تحت هي احتياطي فقط لو فشل التحميل) -->
         <h2 class="section-title">منتجاتنا</h2>
+        <div class="search-box" id="search-box">
+            <i class="fas fa-search"></i>
+            <input type="search" id="search-input" placeholder="ابحث عن منتج بالاسم..." autocomplete="off">
+        </div>
         <div class="product-grid" id="products-grid">
             <div id="products-status" class="products-status">جاري تحميل المنتجات...</div>
             <template id="fallback-products">
@@ -544,6 +556,21 @@
         document.body.style.overflow = "";
     }
 
+    // تطبيع النص العربي للبحث (يتجاهل التشكيل والفروق بين أ/إ/آ/ا و ة/ه و ى/ي)
+    const normalize = t => String(t || "").toLowerCase()
+        .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+        .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه");
+
+    function renderProducts() {
+        const grid = document.getElementById("products-grid");
+        const words = normalize(document.getElementById("search-input").value).split(/\s+/).filter(Boolean);
+        const list = PRODUCTS.map((p, i) => ({ p: p, i: i }))
+            .filter(x => { const t = normalize(x.p.title); return words.every(w => t.includes(w)); });
+        grid.innerHTML = list.length
+            ? list.map(x => cardHTML(x.p, x.i)).join("")
+            : '<div class="no-results">لا توجد منتجات مطابقة لبحثك</div>';
+    }
+
     async function loadProducts() {
         const grid = document.getElementById("products-grid");
         try {
@@ -552,7 +579,8 @@
             const products = parseCSV(await res.text()).filter(p => p.title);
             if (!products.length) throw new Error("empty sheet");
             PRODUCTS = products;
-            grid.innerHTML = products.map(cardHTML).join("");
+            document.getElementById("search-box").classList.add("show");
+            renderProducts();
         } catch (err) {
             console.error("Sheet load failed, using fallback:", err);
             grid.innerHTML = document.getElementById("fallback-products").innerHTML;
@@ -569,6 +597,7 @@
         i = (i + (b.classList.contains("next") ? 1 : -1) + imgs.length) % imgs.length;
         imgs[i].classList.add("active");
     });
+    document.getElementById("search-input").addEventListener("input", renderProducts);
     document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
     document.querySelectorAll(".wa-general").forEach(a => a.href = waLink(GENERAL_MESSAGE));
     loadProducts();
