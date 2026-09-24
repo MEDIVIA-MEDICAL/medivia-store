@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MEDIVIA | المستلزمات الطبية بالرياض</title>
+    <meta name="description" content="MEDIVIA - أجهزة ولوازم طبية أصلية بأسعار تنافسية وتوصيل سريع داخل الرياض. اطلب مباشرة عبر الواتساب.">
+    <meta name="theme-color" content="#1b7a82">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ar_SA">
+    <meta property="og:title" content="MEDIVIA | المستلزمات الطبية بالرياض">
+    <meta property="og:description" content="أجهزة ولوازم طبية أصلية بأسعار تنافسية وتوصيل سريع داخل الرياض. اطلب مباشرة عبر الواتساب.">
+    <meta property="og:image" content="https://i.postimg.cc/hvqqDfS3/logo.png">
+    <link rel="icon" href="https://i.postimg.cc/hvqqDfS3/logo.png">
+    <meta name="twitter:card" content="summary_large_image">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
@@ -14,6 +23,7 @@
             --primary-color: #1b7a82;
             --secondary-color: #f5a623;
             --dark-bg: #000000;
+            --header-bg: #000000;   /* لون الهيدر */
             --light-bg: #f8f9fa;
             --text-color: #333333;
             --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
@@ -34,7 +44,7 @@
 
         /* Header / Navigation */
         header {
-            background-color: var(--dark-bg);
+            background-color: var(--header-bg);
             padding: 15px 20px;
             text-align: center;
             position: sticky;
@@ -396,7 +406,7 @@
         <div class="whatsapp-banner">
             <h2>تواصل معنا واطلب الحين عبر الواتساب</h2>
             <p>جاهزين لخدمتكم وإجابة جميع استفساراتكم فوراً</p>
-            <a href="https://wa.link/d1bhfp" class="btn-whatsapp" target="_blank">
+            <a href="https://wa.link/d1bhfp" class="btn-whatsapp wa-general" target="_blank" rel="noopener">
                 <i class="fab fa-whatsapp"></i>
                 اطلب من واتساب MEDIVIA
             </a>
@@ -430,7 +440,7 @@
     </div>
 
     <!-- Floating WhatsApp Button -->
-    <a href="https://wa.link/d1bhfp" class="floating-whatsapp" target="_blank" title="تواصل عبر الواتساب">
+    <a href="https://wa.link/d1bhfp" class="floating-whatsapp wa-general" target="_blank" rel="noopener" title="تواصل عبر الواتساب">
         <i class="fab fa-whatsapp"></i>
     </a>
 
@@ -450,7 +460,25 @@
     <script>
     // ====== الإعدادات ======
     const SHEET_ID = "1Vmb38osVEYcW5XN3xMyZlCJUvKNUiGqM2oHqkHB4cv0";
-    const WHATSAPP_LINK = "https://wa.link/d1bhfp";
+    const WHATSAPP_LINK = "https://wa.link/d1bhfp";   // رابط احتياطي (بدون رسالة جاهزة)
+    const WHATSAPP_NUMBER = "966510086878";           // رقم الواتساب بالصيغة الدولية بدون + أو 00
+    const STORE_NAME = "MEDIVIA";
+
+    // رسالة الطلب اللي بتوصلك من العميل (عدّليها زي ما تحبي)
+    function orderMessage(p, price) {
+        return "السلام عليكم " + STORE_NAME + " 👋\n" +
+               "أرغب في طلب:\n" +
+               "• المنتج: " + p.title + "\n" +
+               (price !== null ? "• السعر: " + price + " ريال\n" : "") +
+               "\nأرجو تأكيد التوفر وطريقة التوصيل.";
+    }
+    // رسالة الزراير العامة (الزرار العائم وبانر الواتساب)
+    const GENERAL_MESSAGE = "السلام عليكم " + STORE_NAME + "، عندي استفسار عن منتجاتكم.";
+
+    function waLink(text) {
+        if (!WHATSAPP_NUMBER) return WHATSAPP_LINK;
+        return "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + encodeURIComponent(text);
+    }
     const CSV_URL = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv";
 
     function parseCSV(text) {
@@ -491,7 +519,7 @@
             '<div class="product-price">' + (price !== null ? price + ' ريال' : '') +
             (old && price !== null && old > price ? '<span class="product-old-price">' + old + ' ريال</span>' : '') + '</div>' +
             '<button type="button" class="btn-details" data-idx="' + idx + '">عرض التفاصيل</button>' +
-            '<a href="' + WHATSAPP_LINK + '" class="btn-order" target="_blank" rel="noopener">اطلب الحين</a></div></div>';
+            '<a href="' + esc(waLink(orderMessage(p, price))) + '" class="btn-order" target="_blank" rel="noopener">اطلب الحين</a></div></div>';
     }
 
     function openModal(idx) {
@@ -507,7 +535,7 @@
             '<div class="product-price">' + (price !== null ? price + ' ريال' : '') +
             (old && price !== null && old > price ? '<span class="product-old-price">' + old + ' ريال</span>' : '') + '</div>' +
             (p.description ? '<div class="modal-desc">' + esc(p.description) + '</div>' : '') +
-            '<a href="' + WHATSAPP_LINK + '" class="btn-order" target="_blank" rel="noopener">اطلب الحين</a></div>';
+            '<a href="' + esc(waLink(orderMessage(p, price))) + '" class="btn-order" target="_blank" rel="noopener">اطلب الحين</a></div>';
         document.getElementById("product-modal").classList.add("open");
         document.body.style.overflow = "hidden";
     }
@@ -542,7 +570,8 @@
         imgs[i].classList.add("active");
     });
     document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+    document.querySelectorAll(".wa-general").forEach(a => a.href = waLink(GENERAL_MESSAGE));
     loadProducts();
     </script>
 </body>
-            </html> 
+</html>
