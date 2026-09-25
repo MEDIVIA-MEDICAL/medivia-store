@@ -322,6 +322,18 @@
         .search-box input:focus { border-color: var(--primary-color); }
         .search-box i { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); color: #999; pointer-events: none; }
         .no-results { grid-column: 1 / -1; text-align: center; color: #777; padding: 30px 0; }
+
+        .trust-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 30px 0 45px; }
+        .trust-item { background: #fff; border-radius: 10px; padding: 18px 10px; text-align: center; box-shadow: var(--card-shadow); }
+        .trust-item i { font-size: 1.6rem; color: var(--primary-color); margin-bottom: 8px; display: block; }
+        .trust-item span { font-size: 0.9rem; font-weight: 600; color: #333; display: block; }
+
+        .policy-section { background: #fff; border-radius: 14px; padding: 30px; margin: 40px 0; box-shadow: var(--card-shadow); }
+        .policy-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 25px; margin-top: 20px; }
+        .policy-item { display: flex; gap: 14px; align-items: flex-start; }
+        .policy-item i { font-size: 1.4rem; color: var(--primary-color); margin-top: 3px; }
+        .policy-item h4 { font-size: 1.05rem; margin-bottom: 4px; color: #222; }
+        .policy-item p { font-size: 0.9rem; color: #666; margin: 0; }
     </style>
 </head>
 <body>
@@ -340,6 +352,14 @@
     </section>
 
     <div class="container">
+
+        <!-- Trust Strip -->
+        <div class="trust-strip">
+            <div class="trust-item"><i class="fas fa-certificate"></i><span>منتجات أصلية 100%</span></div>
+            <div class="trust-item"><i class="fas fa-truck-fast"></i><span>توصيل 1-2 يوم بالرياض</span></div>
+            <div class="trust-item"><i class="fab fa-whatsapp"></i><span>دعم مباشر عبر واتساب</span></div>
+            <div class="trust-item"><i class="fas fa-rotate-left"></i><span>إمكانية الاستبدال</span></div>
+        </div>
         
         <!-- Products: يتم تحميلها تلقائياً من Google Sheet (المنتجات الثابتة تحت هي احتياطي فقط لو فشل التحميل) -->
         <h2 class="section-title">منتجاتنا</h2>
@@ -422,6 +442,29 @@
                 <i class="fab fa-whatsapp"></i>
                 اطلب من واتساب MEDIVIA
             </a>
+        </div>
+
+        <!-- Policy Section -->
+        <div class="policy-section">
+            <h2 class="section-title">التوصيل والاستبدال</h2>
+            <div class="policy-grid">
+                <div class="policy-item">
+                    <i class="fas fa-truck-fast"></i>
+                    <div><h4>مدة التوصيل</h4><p>1-2 يوم عمل داخل الرياض</p></div>
+                </div>
+                <div class="policy-item">
+                    <i class="fas fa-coins"></i>
+                    <div><h4>تكلفة التوصيل</h4><p>تختلف حسب منطقة التوصيل، وسيتم تأكيدها معك عبر الواتساب عند الطلب</p></div>
+                </div>
+                <div class="policy-item">
+                    <i class="fas fa-rotate-left"></i>
+                    <div><h4>الاستبدال</h4><p>يمكن استبدال المنتج خلال 3 أيام من الاستلام، بشرط أن يكون بحالته الأصلية</p></div>
+                </div>
+                <div class="policy-item">
+                    <i class="fas fa-headset"></i>
+                    <div><h4>الدعم</h4><p>تواصل معنا في أي وقت عبر الواتساب لأي استفسار قبل أو بعد الطلب</p></div>
+                </div>
+            </div>
         </div>
 
         <!-- Additional Categories -->
@@ -519,8 +562,15 @@
 
     let PRODUCTS = [];
 
+    // الصور: ممكن تكتبي في الشيت رابط كامل (https://...) أو اسم ملف فقط (مثال: omron-c28p.jpg)
+    // اسم الملف بيتدوّر عليه تلقائي في فولدر images داخل الموقع. لأكتر من صورة افصلي بينهم بمسافة أو سطر جديد.
+    function parseImages(str) {
+        return String(str || "").split(/[\s|,]+/).filter(Boolean).map(t =>
+            /^https?:\/\//i.test(t) ? t : (t.indexOf("images/") === 0 ? t : "images/" + t.replace(/^\/+/, "")));
+    }
+
     function cardHTML(p, idx) {
-        const imgs = (p.image || "").match(/https?:\/\/[^\s,|"]+/g) || [];
+        const imgs = parseImages(p.image);
         const price = num(p.price), old = num(p.discount);
         const imgHTML = imgs.map((u, i) =>
             '<img src="' + esc(u) + '" alt="' + esc(p.title) + '" class="product-image' + (i === 0 ? ' active' : '') + '" loading="lazy">').join("");
@@ -536,7 +586,7 @@
 
     function openModal(idx) {
         const p = PRODUCTS[idx]; if (!p) return;
-        const imgs = (p.image || "").match(/https?:\/\/[^\s,|"]+/g) || [];
+        const imgs = parseImages(p.image);
         const price = num(p.price), old = num(p.discount);
         const imgHTML = imgs.map((u, i) =>
             '<img src="' + esc(u) + '" alt="' + esc(p.title) + '" class="product-image' + (i === 0 ? ' active' : '') + '">').join("");
