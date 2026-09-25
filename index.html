@@ -334,6 +334,37 @@
         .policy-item i { font-size: 1.4rem; color: var(--primary-color); margin-top: 3px; }
         .policy-item h4 { font-size: 1.05rem; margin-bottom: 4px; color: #222; }
         .policy-item p { font-size: 0.9rem; color: #666; margin: 0; }
+
+        .product-actions { display: flex; flex-direction: column; gap: 8px; }
+        .actions-row { display: flex; gap: 8px; }
+        .actions-row .btn-cart, .actions-row .btn-order { flex: 1; }
+        .btn-cart { display: block; background-color: var(--secondary-color); color: #fff; border: 0;
+            padding: 10px 8px; border-radius: 6px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: background .3s; }
+        .btn-cart:hover { background-color: #d98d10; }
+        .btn-cart i { margin-left: 6px; }
+
+        .floating-cart { position: fixed; bottom: 95px; left: 20px; background-color: var(--primary-color); color: #fff;
+            width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000; border: 0; cursor: pointer; }
+        .cart-badge { position: absolute; top: -4px; right: -4px; background: #e74c3c; color: #fff; border-radius: 50%;
+            width: 22px; height: 22px; font-size: 0.75rem; font-weight: 700; display: none; align-items: center; justify-content: center; }
+        .cart-badge.show { display: flex; }
+
+        .cart-item { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
+        .cart-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; background: #f4f6f8; flex-shrink: 0; }
+        .cart-item-info { flex: 1; text-align: right; }
+        .cart-item-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+        .cart-item-price { color: var(--primary-color); font-weight: 700; font-size: 0.9rem; }
+        .cart-qty { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+        .cart-qty button { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--primary-color);
+            background: #fff; color: var(--primary-color); cursor: pointer; font-weight: 700; line-height: 1; }
+        .cart-remove { color: #c0392b; background: none; border: 0; cursor: pointer; font-size: 0.85rem; margin-top: 6px; }
+        .cart-total { display: flex; justify-content: space-between; font-weight: 800; font-size: 1.15rem; padding: 15px 0 5px; }
+        .cart-checkout-btn { display: block; width: 100%; text-align: center; background-color: #25D366; color: #fff;
+            padding: 13px; border-radius: 8px; font-weight: 700; text-decoration: none; margin-top: 10px; }
+        .cart-empty { text-align: center; color: #777; padding: 30px 10px; }
+        .cart-body { padding: 20px; }
+        .cart-body h3 { text-align: center; margin-bottom: 10px; color: var(--primary-color); }
     </style>
 </head>
 <body>
@@ -494,6 +525,12 @@
 
     </div>
 
+    <!-- Floating Cart Button -->
+    <button type="button" class="floating-cart" id="cart-button" title="السلة" aria-label="السلة">
+        <i class="fas fa-cart-shopping"></i>
+        <span class="cart-badge" id="cart-badge">0</span>
+    </button>
+
     <!-- Floating WhatsApp Button -->
     <a href="https://wa.link/d1bhfp" class="floating-whatsapp wa-general" target="_blank" rel="noopener" title="تواصل عبر الواتساب">
         <i class="fab fa-whatsapp"></i>
@@ -509,6 +546,14 @@
         <div class="modal-box" role="dialog" aria-modal="true">
             <button type="button" class="modal-close" id="modal-close" aria-label="إغلاق">×</button>
             <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <!-- نافذة السلة -->
+    <div class="modal-overlay" id="cart-modal" aria-hidden="true">
+        <div class="modal-box" role="dialog" aria-modal="true">
+            <button type="button" class="modal-close" id="cart-close" aria-label="إغلاق">×</button>
+            <div class="cart-body" id="cart-content"></div>
         </div>
     </div>
 
@@ -562,6 +607,90 @@
 
     let PRODUCTS = [];
 
+    // ====== السلة ======
+    const CART_KEY = "medivia_cart";
+    function getCart() {
+        try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch (e) { return []; }
+    }
+    function saveCart(cart) {
+        try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) {}
+        updateCartBadge();
+    }
+    function updateCartBadge() {
+        const cart = getCart();
+        const count = cart.reduce((s, x) => s + x.qty, 0);
+        const badge = document.getElementById("cart-badge");
+        badge.textContent = count;
+        badge.classList.toggle("show", count > 0);
+    }
+    function addToCart(idx) {
+        const p = PRODUCTS[idx]; if (!p) return;
+        const price = num(p.price);
+        const imgs = parseImages(p.image);
+        const cart = getCart();
+        const existing = cart.find(x => x.title === p.title);
+        if (existing) existing.qty += 1;
+        else cart.push({ title: p.title, price: price, image: imgs[0] || "", qty: 1 });
+        saveCart(cart);
+        openCart();
+    }
+    function changeQty(title, delta) {
+        let cart = getCart();
+        const item = cart.find(x => x.title === title);
+        if (!item) return;
+        item.qty += delta;
+        if (item.qty <= 0) cart = cart.filter(x => x.title !== title);
+        saveCart(cart);
+        renderCart();
+    }
+    function removeFromCart(title) {
+        saveCart(getCart().filter(x => x.title !== title));
+        renderCart();
+    }
+    function renderCart() {
+        const cart = getCart();
+        const box = document.getElementById("cart-content");
+        if (!cart.length) {
+            box.innerHTML = '<h3>سلة المشتريات</h3><div class="cart-empty">السلة فارغة حالياً</div>';
+            return;
+        }
+        const total = cart.reduce((s, x) => s + (x.price || 0) * x.qty, 0);
+        box.innerHTML = '<h3>سلة المشتريات</h3>' +
+            cart.map(x =>
+                '<div class="cart-item">' +
+                (x.image ? '<img src="' + esc(x.image) + '" alt="' + esc(x.title) + '">' : '') +
+                '<div class="cart-item-info"><div class="cart-item-title">' + esc(x.title) + '</div>' +
+                '<div class="cart-item-price">' + (x.price !== null ? x.price + ' ريال' : '') + '</div>' +
+                '<div class="cart-qty">' +
+                '<button type="button" class="qty-minus" data-title="' + esc(x.title) + '">−</button>' +
+                '<span>' + x.qty + '</span>' +
+                '<button type="button" class="qty-plus" data-title="' + esc(x.title) + '">+</button>' +
+                '</div>' +
+                '<button type="button" class="cart-remove" data-title="' + esc(x.title) + '">حذف</button>' +
+                '</div></div>'
+            ).join("") +
+            '<div class="cart-total"><span>الإجمالي</span><span>' + total + ' ريال</span></div>' +
+            '<a href="' + esc(waLink(cartCheckoutMessage(cart, total))) + '" class="cart-checkout-btn" target="_blank" rel="noopener">إتمام الطلب عبر واتساب</a>';
+    }
+    function cartCheckoutMessage(cart, total) {
+        let msg = "السلام عليكم " + STORE_NAME + " 👋\n" + "أرغب في طلب المنتجات التالية:\n\n";
+        cart.forEach((x, i) => {
+            msg += (i + 1) + ". " + x.title + " × " + x.qty + (x.price !== null ? " — " + (x.price * x.qty) + " ريال" : "") + "\n";
+            if (x.image) msg += "   الصورة: " + x.image + "\n";
+        });
+        msg += "\nالإجمالي: " + total + " ريال\nأرجو تأكيد التوفر وطريقة التوصيل.";
+        return msg;
+    }
+    function openCart() {
+        renderCart();
+        document.getElementById("cart-modal").classList.add("open");
+        document.body.style.overflow = "hidden";
+    }
+    function closeCart() {
+        document.getElementById("cart-modal").classList.remove("open");
+        document.body.style.overflow = "";
+    }
+
     // الصور: ممكن تكتبي في الشيت رابط كامل (https://...) أو اسم ملف فقط (مثال: omron-c28p.jpg)
     // اسم الملف بيتدوّر عليه تلقائي في فولدر images داخل الموقع. لأكتر من صورة افصلي بينهم بمسافة أو سطر جديد.
     function parseImages(str) {
@@ -580,8 +709,12 @@
             (p.description ? '<div class="product-desc">' + esc(p.description) + '</div>' : '') +
             '<div class="product-price">' + (price !== null ? price + ' ريال' : '') +
             (old && price !== null && old > price ? '<span class="product-old-price">' + old + ' ريال</span>' : '') + '</div>' +
+            '<div class="product-actions">' +
             '<button type="button" class="btn-details" data-idx="' + idx + '">عرض التفاصيل</button>' +
-            '<a href="' + esc(waLink(orderMessage(p, price))) + '" class="btn-order" target="_blank" rel="noopener">اطلب الحين</a></div></div>';
+            '<div class="actions-row">' +
+            '<button type="button" class="btn-cart" data-idx="' + idx + '"><i class="fas fa-cart-plus"></i>أضف للسلة</button>' +
+            '<a href="' + esc(waLink(orderMessage(p, price))) + '" class="btn-order" target="_blank" rel="noopener">اطلب الآن</a>' +
+            '</div></div></div></div>';
     }
 
     function openModal(idx) {
@@ -597,7 +730,10 @@
             '<div class="product-price">' + (price !== null ? price + ' ريال' : '') +
             (old && price !== null && old > price ? '<span class="product-old-price">' + old + ' ريال</span>' : '') + '</div>' +
             (p.description ? '<div class="modal-desc">' + esc(p.description) + '</div>' : '') +
-            '<a href="' + esc(waLink(orderMessage(p, price))) + '" class="btn-order" target="_blank" rel="noopener">اطلب الحين</a></div>';
+            '<div class="actions-row">' +
+            '<button type="button" class="btn-cart" data-idx="' + idx + '"><i class="fas fa-cart-plus"></i>أضف للسلة</button>' +
+            '<a href="' + esc(waLink(orderMessage(p, price))) + '" class="btn-order" target="_blank" rel="noopener">اطلب الآن</a>' +
+            '</div></div>';
         document.getElementById("product-modal").classList.add("open");
         document.body.style.overflow = "hidden";
     }
@@ -623,6 +759,7 @@
 
     async function loadProducts() {
         const grid = document.getElementById("products-grid");
+        const status = document.getElementById("products-status");
         try {
             const res = await fetch(CSV_URL + "&t=" + Date.now(), { cache: "no-store" });
             if (!res.ok) throw new Error("HTTP " + res.status);
@@ -637,9 +774,19 @@
         }
     }
     document.addEventListener("click", e => {
+        const c = e.target.closest(".btn-cart");
+        if (c) { addToCart(+c.dataset.idx); return; }
         const d = e.target.closest(".btn-details");
         if (d) { openModal(+d.dataset.idx); return; }
         if (e.target.id === "product-modal" || e.target.closest("#modal-close")) { closeModal(); return; }
+        if (e.target.id === "cart-button") { openCart(); return; }
+        if (e.target.id === "cart-modal" || e.target.closest("#cart-close")) { closeCart(); return; }
+        const qp = e.target.closest(".qty-plus");
+        if (qp) { changeQty(qp.dataset.title, 1); return; }
+        const qm = e.target.closest(".qty-minus");
+        if (qm) { changeQty(qm.dataset.title, -1); return; }
+        const rm = e.target.closest(".cart-remove");
+        if (rm) { removeFromCart(rm.dataset.title); return; }
         const b = e.target.closest(".slider-btn"); if (!b) return;
         const imgs = [...b.parentElement.querySelectorAll(".product-image")];
         let i = imgs.findIndex(x => x.classList.contains("active"));
@@ -648,9 +795,10 @@
         imgs[i].classList.add("active");
     });
     document.getElementById("search-input").addEventListener("input", renderProducts);
-    document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); closeCart(); } });
+    updateCartBadge();
     document.querySelectorAll(".wa-general").forEach(a => a.href = waLink(GENERAL_MESSAGE));
     loadProducts();
     </script>
 </body>
-</html>
+                                                                                                                                                                                                                                                                                                                                     </html>
